@@ -41,7 +41,10 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final linhasFav = provider.favoritos;
     final paradasFav = provider.paradasFavoritas;
 
-    return Column(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: Column(
       children: [
         // Seletor de Abas Favoritos em Vidro Neutro
         Padding(
@@ -376,6 +379,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           ),
         ),
       ],
-    );
+    ),
+  ),
+);
   }
 }

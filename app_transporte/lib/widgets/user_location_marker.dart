@@ -1,13 +1,16 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Marcador de Localização Atual do Usuário no Mapa (Padrão Apple Maps / iOS HIG)
-/// Exibe um ponto azul vibrante com anel de pulsação suave e borda branca de alto contraste.
+/// Exibe um ponto azul vibrante com feixe de direção (rumo), anel de pulsação suave e borda de alto contraste.
 class UserLocationMarkerWidget extends StatefulWidget {
   final VoidCallback? onTap;
+  final double? rumo; // Direção / Bússola em graus (0..360)
 
   const UserLocationMarkerWidget({
     super.key,
     this.onTap,
+    this.rumo,
   });
 
   @override
@@ -51,11 +54,20 @@ class _UserLocationMarkerWidgetState extends State<UserLocationMarkerWidget>
       onTap: widget.onTap,
       child: Center(
         child: SizedBox(
-          width: 50,
-          height: 50,
+          width: 60,
+          height: 60,
           child: Stack(
             alignment: Alignment.center,
             children: [
+              // 0. Feixe de Direção da Pessoa (Cone de visão / bússola)
+              if (widget.rumo != null)
+                Transform.rotate(
+                  angle: widget.rumo! * (math.pi / 180),
+                  child: CustomPaint(
+                    size: const Size(60, 60),
+                    painter: _DirectionConePainter(color: blueColor),
+                  ),
+                ),
               // 1. Halo pulsante de sinal GPS
               AnimatedBuilder(
                 animation: _pulseController,
@@ -117,4 +129,44 @@ class _UserLocationMarkerWidgetState extends State<UserLocationMarkerWidget>
       ),
     );
   }
+}
+
+/// Desenha o feixe suave cônico de visão/caminhada da pessoa (Padrão Apple/Google Maps)
+class _DirectionConePainter extends CustomPainter {
+  final Color color;
+
+  const _DirectionConePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    final paint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          color.withValues(alpha: 0.38),
+          color.withValues(alpha: 0.14),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.65, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+    // Arco frontal de 60 graus centrado para cima (-pi/2)
+    final path = Path()
+      ..moveTo(center.dx, center.dy)
+      ..arcTo(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2 - 0.52,
+        1.04,
+        false,
+      )
+      ..close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _DirectionConePainter oldDelegate) =>
+      oldDelegate.color != color;
 }

@@ -42,6 +42,7 @@ class TransporteProvider extends ChangeNotifier {
 
   // Estado - Localização do Usuário (GPS)
   LatLng? _localizacaoUsuario;
+  double? _rumoUsuario; // Direção / Bússola em graus (0..360)
   bool _obtendoLocalizacao = false;
   String? _erroLocalizacao;
   StreamSubscription<Position>? _posicaoUsuarioSub;
@@ -118,6 +119,7 @@ class TransporteProvider extends ChangeNotifier {
 
   // Getters Localização
   LatLng? get localizacaoUsuario => _localizacaoUsuario;
+  double? get rumoUsuario => _rumoUsuario;
   bool get obtendoLocalizacao => _obtendoLocalizacao;
   String? get erroLocalizacao => _erroLocalizacao;
 
@@ -257,16 +259,26 @@ class TransporteProvider extends ChangeNotifier {
   Future<LatLng?> obterLocalizacaoAtual() async {
     _obtendoLocalizacao = true;
     _erroLocalizacao = null;
-    notifyListeners();
 
     try {
+      // 1. Resposta Instantânea (0ms): tenta pegar a última posição conhecida do dispositivo
+      try {
+        final lastPos = await Geolocator.getLastKnownPosition();
+        if (lastPos != null) {
+          _localizacaoUsuario = LatLng(lastPos.latitude, lastPos.longitude);
+          if (lastPos.heading != 0) _rumoUsuario = lastPos.heading;
+          notifyListeners();
+        }
+      } catch (_) {}
+
+      // 2. Valida permissões de localização
       if (!kIsWeb) {
         bool servicoAtivo = await Geolocator.isLocationServiceEnabled();
         if (!servicoAtivo) {
           _erroLocalizacao = 'Serviço de localização desativado';
           _obtendoLocalizacao = false;
           notifyListeners();
-          return null;
+          return _localizacaoUsuario;
         }
       }
 
@@ -277,7 +289,7 @@ class TransporteProvider extends ChangeNotifier {
           _erroLocalizacao = 'Permissão de localização negada';
           _obtendoLocalizacao = false;
           notifyListeners();
-          return null;
+          return _localizacaoUsuario;
         }
       }
 
@@ -285,23 +297,32 @@ class TransporteProvider extends ChangeNotifier {
         _erroLocalizacao = 'Permissão de localização negada permanentemente';
         _obtendoLocalizacao = false;
         notifyListeners();
-        return null;
+        return _localizacaoUsuario;
       }
 
+      // 3. Localização ágil (precisão balanceada com timeout de 3.5s para não travar a UI)
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(milliseconds: 3500),
         ),
       );
 
       _localizacaoUsuario = LatLng(pos.latitude, pos.longitude);
+      if (pos.heading != 0) _rumoUsuario = pos.heading;
       _obtendoLocalizacao = false;
       notifyListeners();
 
       _iniciarStreamLocalizacao();
       return _localizacaoUsuario;
     } catch (e) {
+      // Se deu timeout mas já temos a última conhecida, mantém ela
+      if (_localizacaoUsuario != null) {
+        _obtendoLocalizacao = false;
+        notifyListeners();
+        _iniciarStreamLocalizacao();
+        return _localizacaoUsuario;
+      }
       _erroLocalizacao = 'Erro ao obter localização: $e';
       _obtendoLocalizacao = false;
       notifyListeners();
@@ -313,11 +334,14 @@ class TransporteProvider extends ChangeNotifier {
     _posicaoUsuarioSub?.cancel();
     _posicaoUsuarioSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
+        accuracy: LocationAccuracy.medium,
+        distanceFilter: 4,
       ),
     ).listen((pos) {
       _localizacaoUsuario = LatLng(pos.latitude, pos.longitude);
+      if (pos.heading != 0) {
+        _rumoUsuario = pos.heading;
+      }
       notifyListeners();
     }, onError: (_) {});
   }

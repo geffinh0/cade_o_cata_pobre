@@ -31,7 +31,10 @@ class _StopsScreenState extends State<StopsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<TransporteProvider>();
 
-    return Column(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: Column(
       children: [
         // Barra de Busca
         Padding(
@@ -271,6 +274,8 @@ class _StopsScreenState extends State<StopsScreen> {
                     ),
         ),
       ],
-    );
+    ),
+  ),
+);
   }
 }

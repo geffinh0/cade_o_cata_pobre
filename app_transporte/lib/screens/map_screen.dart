@@ -43,6 +43,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   double _currentRotation = 0.0;
   bool _carrosselExpandido = true;
   bool _mapaPronto = false;
+  bool _isAnimatingCamera = false;
 
   // Centro padrão: Avenida Paulista / Sé - São Paulo
   static const LatLng _centroSaoPaulo = LatLng(-23.55052, -46.633308);
@@ -61,7 +62,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  /// Executa movimento suave e interpolado de câmera
+  /// Executa movimento suave e interpolado de câmera ultra-ágil para mobile
   void _animatedMapMove(LatLng destLocation, double destZoom, {double? destRotation}) {
     _animationController?.stop();
     _animationController?.dispose();
@@ -86,8 +87,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       end: targetRotation,
     );
 
+    // 320ms: velocidade ideal para mobile (ágil como Apple Maps / Google Maps)
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 480),
+      duration: const Duration(milliseconds: 320),
       vsync: this,
     );
 
@@ -96,6 +98,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       curve: Curves.fastOutSlowIn,
     );
 
+    _isAnimatingCamera = true;
+
     _animationController!.addListener(() {
       _mapController.move(
         LatLng(latTween.evaluate(animation), lngTween.evaluate(animation)),
@@ -103,6 +107,18 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       );
       if (destRotation != null) {
         _mapController.rotate(rotTween.evaluate(animation));
+      }
+    });
+
+    _animationController!.addStatusListener((status) {
+      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
+        _isAnimatingCamera = false;
+        if (mounted) {
+          setState(() {
+            _currentZoom = _mapController.camera.zoom;
+            _currentRotation = _mapController.camera.rotation;
+          });
+        }
       }
     });
 
@@ -292,10 +308,23 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               flags: InteractiveFlag.all,
             ),
             onPositionChanged: (camera, hasGesture) {
-              setState(() {
-                _currentZoom = camera.zoom;
-                _currentRotation = camera.rotation;
-              });
+              if (!_isAnimatingCamera) {
+                final bool wasCompact = _currentZoom < 13.8;
+                final bool isNowCompact = camera.zoom < 13.8;
+                final bool wasHidden = _currentZoom < 12.0;
+                final bool isNowHidden = camera.zoom < 12.0;
+                final rotDiff = (camera.rotation - _currentRotation).abs();
+
+                if (wasCompact != isNowCompact || wasHidden != isNowHidden || rotDiff > 2.0) {
+                  setState(() {
+                    _currentZoom = camera.zoom;
+                    _currentRotation = camera.rotation;
+                  });
+                } else {
+                  _currentZoom = camera.zoom;
+                  _currentRotation = camera.rotation;
+                }
+              }
               // Se o usuário interagiu por gesto próprio, desliga suavemente o auto-follow
               if (hasGesture && provider.modoSeguirVeiculo) {
                 provider.desativarModoSeguir();
@@ -321,6 +350,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               minZoom: 4,
               keepBuffer: 3,
               panBuffer: 1,
+              tileUpdateTransformer: TileUpdateTransformers.throttle(const Duration(milliseconds: 120)),
             ),
 
             // Trajeto Vetorial em Alta Definição e Alto Contraste (Multi-pass glow)
@@ -360,15 +390,16 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             // Marcadores de Ônibus em Tempo Real
             MarkerLayer(markers: marcadoresVeiculos),
 
-            // Marcador de Localização Atual do Usuário (GPS ao vivo)
+            // Marcador de Localização Atual do Usuário (GPS ao vivo com Feixe de Direção)
             if (provider.localizacaoUsuario != null)
               MarkerLayer(
                 markers: [
                   Marker(
                     point: provider.localizacaoUsuario!,
-                    width: 50,
-                    height: 50,
+                    width: 60,
+                    height: 60,
                     child: UserLocationMarkerWidget(
+                      rumo: provider.rumoUsuario,
                       onTap: () {
                         _animatedMapMove(provider.localizacaoUsuario!, 16.5);
                       },
@@ -412,21 +443,24 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             temLocalizacaoUsuario: provider.localizacaoUsuario != null,
             onAlternarTipoMapa: () => provider.alternarTipoMapa(),
             onMinhaLocalizacao: () async {
+              // Resposta instantânea (0ms): se já conhece a posição, voa imediatamente!
+              if (provider.localizacaoUsuario != null) {
+                _animatedMapMove(provider.localizacaoUsuario!, 16.5);
+              }
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               final loc = await provider.obterLocalizacaoAtual();
+              if (!mounted) return;
+
               if (loc != null) {
                 _animatedMapMove(loc, 16.5);
-              } else if (provider.localizacaoUsuario != null) {
-                _animatedMapMove(provider.localizacaoUsuario!, 16.5);
-              } else {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(provider.erroLocalizacao ?? 'Ative a permissão de GPS para ver sua localização.'),
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
+              } else if (provider.localizacaoUsuario == null) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(provider.erroLocalizacao ?? 'Ative a permissão de GPS para ver sua localização.'),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
               }
             },
             onAlternarSeguir: () {

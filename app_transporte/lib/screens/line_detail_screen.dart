@@ -63,7 +63,10 @@ class _LineDetailScreenState extends State<LineDetailScreen> {
     return Scaffold(
       body: GlassBackground(
         child: SafeArea(
-          child: Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Column(
             children: [
               // Top Glass Bar
               Padding(
@@ -509,6 +512,8 @@ class _LineDetailScreenState extends State<LineDetailScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

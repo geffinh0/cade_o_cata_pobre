@@ -39,7 +39,10 @@ class _LinesScreenState extends State<LinesScreen> {
       return true;
     }).toList();
 
-    return Column(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: Column(
       children: [
         // Barra de Busca e Filtros
         Padding(
@@ -381,7 +384,9 @@ class _LinesScreenState extends State<LinesScreen> {
                     ),
         ),
       ],
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildSegment(String label, int value) {

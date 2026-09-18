@@ -38,11 +38,13 @@ class PrevisaoModalWidget extends StatelessWidget {
       bottom: true,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.82,
-          ),
-          child: GlassContainer(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 580,
+              maxHeight: MediaQuery.of(context).size.height * 0.82,
+            ),
+            child: GlassContainer(
             borderRadius: GlassTheme.radiusModal, // 24.0 (Overlay)
             blurSigma: GlassTheme.blurOverlay,    // 25.0
             fillOpacity: GlassTheme.fillOverlay,  // 0.16 (16%)
@@ -317,7 +319,8 @@ class PrevisaoModalWidget extends StatelessWidget {
         ),
       ),
     ),
-    ),
-    );
+  ),
+),
+);
   }
 }

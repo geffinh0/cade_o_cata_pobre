@@ -27,7 +27,10 @@ class PainelVeiculoDetalheWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-      child: GlassContainer(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 580),
+          child: GlassContainer(
         borderRadius: GlassTheme.radiusModal, // 24
         blurSigma: GlassTheme.blurOverlay,    // 25
         fillOpacity: GlassTheme.fillOverlay,  // 0.16
@@ -161,7 +164,9 @@ class PainelVeiculoDetalheWidget extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _itemInfo({
