@@ -530,77 +530,109 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           onSearch: () => _abrirModalBuscaRapida(context, provider),
         ),
 
-        // Atalhos rápidos em chips horizontais (Favoritos ou rotas populares)
-        if (favoritos.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 34,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: math.min(favoritos.length, 6),
-              separatorBuilder: (_, index) => const SizedBox(width: 6),
-              itemBuilder: (ctx, index) {
-                final fav = favoritos[index];
-                final letreiro = fav['letreiro'] ?? fav['codigo_linha'] ?? '';
-                final desc = fav['descricao'] ?? '';
+        // Atalhos rápidos em chips horizontais (Favoritos ou rotas populares para seleção em 1 toque)
+        Builder(
+          builder: (ctx) {
+            final chips = favoritos.isNotEmpty
+                ? favoritos
+                : const [
+                    {'codigo_linha': '', 'letreiro': '8000-10', 'descricao': 'Term. Lapa'},
+                    {'codigo_linha': '', 'letreiro': '875A-10', 'descricao': 'Aeroporto'},
+                    {'codigo_linha': '', 'letreiro': '175T-10', 'descricao': 'Metrô Jabaquara'},
+                    {'codigo_linha': '', 'letreiro': '3026-10', 'descricao': 'CPTM Guaianazes'},
+                  ];
 
-                return InkWell(
-                  onTap: () async {
-                    final codigo = int.tryParse(fav['codigo_linha'] ?? '');
-                    if (codigo != null) {
-                      final linhaObj = Linha(
-                        cl: codigo,
-                        lc: false,
-                        lt: letreiro,
-                        tl: 10,
-                        sl: 1,
-                        tp: desc,
-                        ts: '',
-                      );
-                      provider.acompanharLinha(linhaObj);
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        if (mounted) _ajustarCameraParaLinha(provider);
-                      });
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xDD111915),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.16),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(CupertinoIcons.star_fill, size: 11, color: Color(0xFFFF9F0A)),
-                        const SizedBox(width: 6),
-                        Text(
-                          letreiro,
-                          style: GoogleFonts.inter(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+            return Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: SizedBox(
+                height: 34,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: math.min(chips.length, 6),
+                  separatorBuilder: (_, index) => const SizedBox(width: 6),
+                  itemBuilder: (ctx, index) {
+                    final item = chips[index];
+                    final letreiro = item['letreiro'] ?? item['codigo_linha'] ?? '';
+                    final desc = item['descricao'] ?? '';
+                    final isFavorito = favoritos.isNotEmpty;
+
+                    return InkWell(
+                      onTap: () async {
+                        final codigo = int.tryParse(item['codigo_linha'] ?? '');
+                        if (codigo != null && codigo > 0) {
+                          final linhaObj = Linha(
+                            cl: codigo,
+                            lc: false,
+                            lt: letreiro,
+                            tl: 10,
+                            sl: 1,
+                            tp: desc,
+                            ts: '',
+                          );
+                          provider.acompanharLinha(linhaObj);
+                          Future.delayed(const Duration(milliseconds: 300), () {
+                            if (mounted) _ajustarCameraParaLinha(provider);
+                          });
+                        } else {
+                          provider.buscarLinhas(letreiro);
+                          _abrirModalBuscaRapida(context, provider);
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(GlassTheme.radiusPill),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xDD111915),
+                          borderRadius: BorderRadius.circular(GlassTheme.radiusPill),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.16),
+                            width: 1,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.30),
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isFavorito ? CupertinoIcons.star_fill : Icons.directions_bus_rounded,
+                              size: 11,
+                              color: isFavorito ? const Color(0xFFFF9F0A) : Colors.white70,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              letreiro,
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            if (desc.isNotEmpty) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                '• $desc',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white60,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
       ],
     );
   }
@@ -896,6 +928,15 @@ class _ModalBuscaRapidaLinhas extends StatefulWidget {
 class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
   final TextEditingController _buscaCtrl = TextEditingController();
 
+  static const List<Map<String, String>> _sugestoesPopulares = [
+    {'letreiro': '8000-10', 'desc': 'Term. Lapa / Pça. Ramos'},
+    {'letreiro': '875A-10', 'desc': 'Aeroporto / Perdizes'},
+    {'letreiro': '175T-10', 'desc': 'Tremembé / Metrô Jabaquara'},
+    {'letreiro': '856R-10', 'desc': 'Lapa / Socorro'},
+    {'letreiro': '3026-10', 'desc': 'Vila Progresso / CPTM'},
+    {'letreiro': '208M-10', 'desc': 'Metrô Santana / Term. Pinheiros'},
+  ];
+
   @override
   void dispose() {
     _buscaCtrl.dispose();
@@ -904,187 +945,275 @@ class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = widget.provider;
-    final linhas = provider.linhas;
-    final historico = provider.historicoBuscas;
+    return ListenableBuilder(
+      listenable: widget.provider,
+      builder: (context, _) {
+        final provider = widget.provider;
+        final linhas = provider.linhas;
+        final historico = provider.historicoBuscas;
+        final favoritos = provider.favoritos;
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.45,
-      maxChildSize: 0.92,
-      builder: (_, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: const Color(0xF2101713),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1,
-            ),
-          ),
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(2),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.45,
+          maxChildSize: 0.92,
+          builder: (_, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: const Color(0xF2101713),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  width: 1,
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Selecionar Linha para o Mapa',
-                style: GoogleFonts.inter(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Campo de texto de busca padronizado em estilo pílula
-              GlassSearchBar(
-                controller: _buscaCtrl,
-                autofocus: true,
-                hintText: 'Digite o número ou destino da linha...',
-                prefixIcon: Icons.directions_bus_rounded,
-                isLoading: provider.carregando,
-                onSubmitted: (val) {
-                  if (val.trim().isNotEmpty) {
-                    provider.buscarLinhas(val.trim());
-                  }
-                },
-                onSearch: () {
-                  if (_buscaCtrl.text.trim().isNotEmpty) {
-                    provider.buscarLinhas(_buscaCtrl.text.trim());
-                  }
-                },
-                onClear: () {
-                  _buscaCtrl.clear();
-                  provider.buscarLinhas('');
-                },
-              ),
-              const SizedBox(height: 14),
-
-              // Resultados ou histórico
-              Expanded(
-                child: provider.carregando
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Selecionar Linha para o Mapa',
+                        style: GoogleFonts.inter(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: -0.2,
                         ),
-                      )
-                    : linhas.isNotEmpty
-                        ? ListView.separated(
-                            controller: scrollController,
-                            itemCount: linhas.length,
-                            separatorBuilder: (_, index) => const Divider(color: Colors.white10, height: 1),
-                            itemBuilder: (ctx, idx) {
-                              final l = linhas[idx];
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                leading: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1B3B2B),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.16),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    l.lt,
-                                    style: GoogleFonts.inter(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                title: Text(
-                                  l.tp,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                subtitle: l.ts.isNotEmpty
-                                    ? Text(
-                                        'Sentido: ${l.ts}',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          color: GlassTheme.textTertiary,
-                                        ),
-                                      )
-                                    : null,
-                                trailing: const Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  color: Colors.white30,
-                                  size: 14,
-                                ),
-                                onTap: () => widget.onLinhaSelecionada(l),
-                              );
-                            },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+                        onPressed: () => Navigator.of(context).pop(),
+                        splashRadius: 18,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Campo de texto de busca padronizado em estilo pílula
+                  GlassSearchBar(
+                    controller: _buscaCtrl,
+                    autofocus: true,
+                    hintText: 'Digite o número ou destino da linha...',
+                    prefixIcon: Icons.directions_bus_rounded,
+                    isLoading: provider.carregando,
+                    onSubmitted: (val) {
+                      if (val.trim().isNotEmpty) {
+                        provider.buscarLinhas(val.trim());
+                      }
+                    },
+                    onSearch: () {
+                      if (_buscaCtrl.text.trim().isNotEmpty) {
+                        provider.buscarLinhas(_buscaCtrl.text.trim());
+                      }
+                    },
+                    onChanged: (val) {
+                      if (val.trim().length >= 3) {
+                        provider.buscarLinhas(val.trim());
+                      }
+                    },
+                    onClear: () {
+                      _buscaCtrl.clear();
+                      provider.buscarLinhas('');
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Resultados ou sugestões
+                  Expanded(
+                    child: provider.carregando
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                            ),
                           )
-                        : ListView(
-                            controller: scrollController,
-                            children: [
-                              if (historico.isNotEmpty) ...[
-                                Text(
-                                  'Buscas Recentes',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: GlassTheme.textTertiary,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: historico.map((h) {
-                                    return ActionChip(
-                                      backgroundColor: Colors.white.withValues(alpha: 0.08),
-                                      side: BorderSide(
-                                        color: Colors.white.withValues(alpha: 0.12),
+                        : linhas.isNotEmpty
+                            ? ListView.separated(
+                                controller: scrollController,
+                                itemCount: linhas.length,
+                                separatorBuilder: (_, index) => const Divider(color: Colors.white10, height: 1),
+                                itemBuilder: (ctx, idx) {
+                                  final l = linhas[idx];
+                                  return ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                    leading: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: GlassTheme.accentDarkGreen,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.18),
+                                        ),
                                       ),
-                                      label: Text(
-                                        h,
-                                        style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
-                                      ),
-                                      onPressed: () {
-                                        _buscaCtrl.text = h;
-                                        provider.buscarLinhas(h);
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
-                              ] else
-                                Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(top: 40),
-                                    child: Text(
-                                      'Digite o número ou nome da linha para ver o trajeto e veículos ao vivo.',
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.inter(
-                                        color: GlassTheme.textTertiary,
-                                        fontSize: 13,
+                                      child: Text(
+                                        l.lt,
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12.5,
+                                        ),
                                       ),
                                     ),
+                                    title: Text(
+                                      l.tp,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    subtitle: l.ts.isNotEmpty
+                                        ? Text(
+                                            'Sentido: ${l.ts}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              color: GlassTheme.textTertiary,
+                                            ),
+                                          )
+                                        : null,
+                                    trailing: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(GlassTheme.radiusPill),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.map_rounded, size: 12, color: Colors.white),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Ver no Mapa',
+                                            style: GoogleFonts.inter(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    onTap: () => widget.onLinhaSelecionada(l),
+                                  );
+                                },
+                              )
+                            : ListView(
+                                controller: scrollController,
+                                children: [
+                                  if (favoritos.isNotEmpty) ...[
+                                    Text(
+                                      'Linhas Favoritas',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: GlassTheme.textTertiary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: favoritos.map((fav) {
+                                        final letreiro = fav['letreiro'] ?? fav['codigo_linha'] ?? '';
+                                        final desc = fav['descricao'] ?? '';
+                                        return ActionChip(
+                                          avatar: const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                                          backgroundColor: Colors.white.withValues(alpha: 0.08),
+                                          side: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GlassTheme.radiusPill)),
+                                          label: Text(
+                                            letreiro.isNotEmpty ? '$letreiro - $desc' : desc,
+                                            style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                                          ),
+                                          onPressed: () {
+                                            _buscaCtrl.text = letreiro;
+                                            provider.buscarLinhas(letreiro);
+                                          },
+                                        );
+                                      }).toList(),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                  if (historico.isNotEmpty) ...[
+                                    Text(
+                                      'Buscas Recentes',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: GlassTheme.textTertiary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: historico.map((h) {
+                                        return ActionChip(
+                                          avatar: const Icon(Icons.history_rounded, size: 14, color: Colors.white60),
+                                          backgroundColor: Colors.white.withValues(alpha: 0.08),
+                                          side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GlassTheme.radiusPill)),
+                                          label: Text(
+                                            h,
+                                            style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                                          ),
+                                          onPressed: () {
+                                            _buscaCtrl.text = h;
+                                            provider.buscarLinhas(h);
+                                          },
+                                        );
+                                      }).toList(),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                  Text(
+                                    'Linhas Sugeridas / Populares',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: GlassTheme.textTertiary,
+                                    ),
                                   ),
-                                ),
-                            ],
-                          ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: _sugestoesPopulares.map((s) {
+                                      return ActionChip(
+                                        avatar: const Icon(Icons.directions_bus_rounded, size: 14, color: Colors.white70),
+                                        backgroundColor: Colors.white.withValues(alpha: 0.08),
+                                        side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GlassTheme.radiusPill)),
+                                        label: Text(
+                                          '${s['letreiro']} • ${s['desc']}',
+                                          style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                                        ),
+                                        onPressed: () {
+                                          _buscaCtrl.text = s['letreiro']!;
+                                          provider.buscarLinhas(s['letreiro']!);
+                                        },
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

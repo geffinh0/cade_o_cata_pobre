@@ -352,7 +352,12 @@ class TransporteProvider extends ChangeNotifier {
 
   Future<void> buscarLinhas(String termo) async {
     final t = termo.trim();
-    if (t.isEmpty) return;
+    if (t.isEmpty) {
+      _linhasEncontradas = [];
+      _mensagemErro = null;
+      notifyListeners();
+      return;
+    }
 
     _carregando = true;
     _mensagemErro = null;

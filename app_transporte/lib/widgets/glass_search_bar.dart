@@ -100,28 +100,28 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
       blurSigma: 16,
       fillOpacity: 0.10,
       borderOpacity: 0.16,
+      onTap: widget.readOnly ? widget.onTap : null,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-      child: SizedBox(
-        height: widget.height,
-        child: Row(
-          children: [
-            // Ícone contextual à esquerda
-            Padding(
-              padding: const EdgeInsets.only(left: 12, right: 10),
-              child: Icon(
-                widget.prefixIcon,
-                size: 19,
-                color: Colors.white60,
+      child: IgnorePointer(
+        ignoring: widget.readOnly,
+        child: SizedBox(
+          height: widget.height,
+          child: Row(
+            children: [
+              // Ícone contextual à esquerda
+              Padding(
+                padding: const EdgeInsets.only(left: 12, right: 10),
+                child: Icon(
+                  widget.prefixIcon,
+                  size: 19,
+                  color: Colors.white60,
+                ),
               ),
-            ),
 
-            // Campo de digitação ou rótulo somente-leitura
-            Expanded(
-              child: widget.readOnly
-                  ? GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: widget.onTap,
-                      child: Container(
+              // Campo de digitação ou rótulo somente-leitura
+              Expanded(
+                child: widget.readOnly
+                    ? Container(
                         alignment: Alignment.centerLeft,
                         height: widget.height,
                         child: Text(
@@ -134,10 +134,9 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    )
-                  : TextField(
-                      controller: _effectiveController,
+                      )
+                    : TextField(
+                        controller: _effectiveController,
                       autofocus: widget.autofocus,
                       style: GoogleFonts.inter(
                         color: Colors.white,
@@ -265,6 +264,7 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
