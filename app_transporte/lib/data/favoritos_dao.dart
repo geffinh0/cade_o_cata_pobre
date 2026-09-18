@@ -54,7 +54,7 @@ class FavoritosDao {
 
   Future<void> adicionar(String codigoLinha, String descricao, {String letreiro = ''}) async {
     final prefs = await _getPrefs();
-    final list = await listarFavoritos();
+    final list = List<Map<String, dynamic>>.from(await listarFavoritos());
 
     list.removeWhere((item) => item['codigo_linha'] == codigoLinha);
     list.insert(0, {
@@ -69,7 +69,7 @@ class FavoritosDao {
 
   Future<void> remover(String codigoLinha) async {
     final prefs = await _getPrefs();
-    final list = await listarFavoritos();
+    final list = List<Map<String, dynamic>>.from(await listarFavoritos());
     list.removeWhere((item) => item['codigo_linha'] == codigoLinha);
 
     final serialized = list.map((item) => jsonEncode(item)).toList();
@@ -104,7 +104,7 @@ class FavoritosDao {
 
   Future<void> adicionarParada(int codigoParada, String nomeParada, double py, double px) async {
     final prefs = await _getPrefs();
-    final list = await listarParadasFavoritas();
+    final list = List<Map<String, dynamic>>.from(await listarParadasFavoritas());
 
     list.removeWhere((item) => item['codigo_parada'] == codigoParada);
     list.insert(0, {
@@ -120,7 +120,7 @@ class FavoritosDao {
 
   Future<void> removerParada(int codigoParada) async {
     final prefs = await _getPrefs();
-    final list = await listarParadasFavoritas();
+    final list = List<Map<String, dynamic>>.from(await listarParadasFavoritas());
     list.removeWhere((item) => item['codigo_parada'] == codigoParada);
 
     final serialized = list.map((item) => jsonEncode(item)).toList();
@@ -138,7 +138,8 @@ class FavoritosDao {
 
   Future<List<String>> listarHistoricoBuscas() async {
     final prefs = await _getPrefs();
-    return prefs.getStringList(_keyHistoricoBuscas) ?? const <String>[];
+    final raw = prefs.getStringList(_keyHistoricoBuscas) ?? <String>[];
+    return List<String>.from(raw);
   }
 
   Future<void> adicionarHistoricoBusca(String termo) async {
@@ -146,7 +147,7 @@ class FavoritosDao {
     if (t.isEmpty) return;
 
     final prefs = await _getPrefs();
-    final list = await listarHistoricoBuscas();
+    final list = List<String>.from(await listarHistoricoBuscas());
     list.removeWhere((item) => item.toLowerCase() == t.toLowerCase());
     list.insert(0, t);
     if (list.length > 10) list.removeLast();
