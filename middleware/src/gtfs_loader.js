@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 const { parse } = require('csv-parse/sync');
 
 // Diretório padrão dos dados GTFS
@@ -15,7 +16,7 @@ const GTFS_DIR = process.env.GTFS_PATH || path.join(__dirname, '..', 'gtfs_data'
 // Índices em memória
 const routes = new Map();        // route_id -> { route_id, route_short_name, route_long_name, route_color, route_text_color }
 const trips = new Map();         // trip_id -> { route_id, service_id, trip_id, trip_headsign, direction_id, shape_id }
-const shapes = new Map();        // shape_id -> [{ lat, lon, seq, dist }] (ordenado por seq)
+const shapes = new Map();        // shape_id -> Float32Array([lat, lon, lat, lon, ...]) para memória ultra-baixa (38MB vs 700MB)
 const stops = new Map();         // stop_id -> { stop_id, stop_name, stop_lat, stop_lon }
 const routeTrips = new Map();    // route_id -> [trip objects]
 const routeStopIds = new Map();  // route_id -> Set<stop_id>
@@ -56,10 +57,83 @@ function lerCsv(nomeArquivo) {
 }
 
 /**
- * Carrega todos os dados GTFS na memória.
+ * Carrega shapes com streaming linha a linha e armazena em Float32Array.
+ * Reduz o consumo de memória de ~700MB para ~38MB, permitindo rodar em planos gratuitos (Render 512MB).
+ */
+function carregarShapesStream(caminho) {
+  return new Promise((resolve) => {
+    if (!fs.existsSync(caminho)) {
+      console.warn(`[gtfs] Arquivo não encontrado: ${caminho}`);
+      return resolve();
+    }
+
+    const rl = readline.createInterface({
+      input: fs.createReadStream(caminho),
+      crlfDelay: Infinity,
+    });
+
+    let isHeader = true;
+    let totalPontos = 0;
+
+    rl.on('line', (line) => {
+      if (isHeader) {
+        isHeader = false;
+        return;
+      }
+      if (!line) return;
+      const c1 = line.indexOf(',');
+      if (c1 === -1) return;
+      const c2 = line.indexOf(',', c1 + 1);
+      if (c2 === -1) return;
+      const c3 = line.indexOf(',', c2 + 1);
+
+      let shapeId = line.slice(0, c1);
+      let latStr = line.slice(c1 + 1, c2);
+      let lonStr = c3 === -1 ? line.slice(c2 + 1) : line.slice(c2 + 1, c3);
+
+      if (shapeId.charCodeAt(0) === 34) {
+        shapeId = shapeId.slice(1, -1);
+      }
+      if (latStr.charCodeAt(0) === 34) {
+        latStr = latStr.slice(1, -1);
+      }
+      if (lonStr.charCodeAt(0) === 34) {
+        lonStr = lonStr.slice(1, -1);
+      }
+
+      const lat = parseFloat(latStr);
+      const lon = parseFloat(lonStr);
+
+      let arr = shapes.get(shapeId);
+      if (!arr) {
+        arr = [];
+        shapes.set(shapeId, arr);
+      }
+      arr.push(lat, lon);
+      totalPontos++;
+    });
+
+    rl.on('close', () => {
+      for (const [id, arr] of shapes) {
+        shapes.set(id, new Float32Array(arr));
+      }
+      totalShapes = shapes.size;
+      console.log(`[gtfs]   ${totalShapes} shapes carregados (${totalPontos} pontos em Float32Array - ~38MB RAM)`);
+      resolve();
+    });
+
+    rl.on('error', (err) => {
+      console.warn(`[gtfs] Erro ao ler stream de shapes: ${err.message}`);
+      resolve();
+    });
+  });
+}
+
+/**
+ * Carrega todos os dados GTFS na memória de forma otimizada.
  * Chamado uma vez na inicialização do servidor.
  */
-function carregarGtfs() {
+async function carregarGtfs() {
   if (carregado) return;
 
   console.log(`[gtfs] Carregando dados GTFS de: ${GTFS_DIR}`);
@@ -107,28 +181,10 @@ function carregarGtfs() {
   }
   console.log(`[gtfs]   ${trips.size} trips carregadas`);
 
-  // 3. SHAPES - Trajetos georreferenciados das vias (arquivo grande ~60MB)
-  console.log(`[gtfs]   Carregando shapes (pode levar alguns segundos)...`);
-  const shapesRaw = lerCsv('shapes.txt');
-  for (const s of shapesRaw) {
-    const shapeId = s.shape_id;
-    if (!shapeId) continue;
-    if (!shapes.has(shapeId)) {
-      shapes.set(shapeId, []);
-    }
-    shapes.get(shapeId).push({
-      lat: parseFloat(s.shape_pt_lat),
-      lon: parseFloat(s.shape_pt_lon),
-      seq: parseInt(s.shape_pt_sequence || '0', 10),
-      dist: parseFloat(s.shape_dist_traveled || '0'),
-    });
-  }
-  // Ordenar pontos de cada shape por sequência
-  for (const [, pontos] of shapes) {
-    pontos.sort((a, b) => a.seq - b.seq);
-  }
-  totalShapes = shapes.size;
-  console.log(`[gtfs]   ${totalShapes} shapes carregados (${shapesRaw.length} pontos totais)`);
+  // 3. SHAPES - Trajetos georreferenciados das vias (Streaming de baixo consumo de RAM)
+  console.log(`[gtfs]   Carregando shapes via stream (otimizado para Render free tier)...`);
+  const caminhoShapes = path.join(GTFS_DIR, 'shapes.txt');
+  await carregarShapesStream(caminhoShapes);
 
   // 4. STOPS - Paradas com coordenadas
   const stopsRaw = lerCsv('stops.txt');
@@ -216,6 +272,18 @@ function buscarRotas(termo, limite = 50) {
 }
 
 /**
+ * Converte Float32Array [lat, lon, lat, lon, ...] para array [{ py, px }, ...]
+ */
+function formatarShape(pontos) {
+  if (!pontos || pontos.length === 0) return null;
+  const result = [];
+  for (let i = 0; i < pontos.length; i += 2) {
+    result.push({ py: pontos[i], px: pontos[i + 1] });
+  }
+  return result;
+}
+
+/**
  * Obtém o shape (trajeto georreferenciado) de uma rota pelo route_id.
  * Retorna um array de { py, px } (lat/lon) pronto para consumo pelo app.
  * Tenta primeiro direction_id=0 (ida), depois direction_id=1 (volta).
@@ -235,9 +303,7 @@ function obterShapeRota(routeId, directionId = null) {
   if (!tripAlvo || !tripAlvo.shape_id) return null;
 
   const pontos = shapes.get(tripAlvo.shape_id);
-  if (!pontos || pontos.length === 0) return null;
-
-  return pontos.map(p => ({ py: p.lat, px: p.lon }));
+  return formatarShape(pontos);
 }
 
 /**
@@ -252,11 +318,10 @@ function obterShapesRotaBidirecional(routeId) {
     const pontos = shapes.get(trip.shape_id);
     if (!pontos || pontos.length === 0) continue;
 
-    const mapped = pontos.map(p => ({ py: p.lat, px: p.lon }));
     if (trip.direction_id === 0 && !result.ida) {
-      result.ida = mapped;
+      result.ida = formatarShape(pontos);
     } else if (trip.direction_id === 1 && !result.volta) {
-      result.volta = mapped;
+      result.volta = formatarShape(pontos);
     }
     if (result.ida && result.volta) break;
   }

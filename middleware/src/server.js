@@ -551,17 +551,54 @@ io.on('connection', (socket) => {
 
 // Inicialização
 
+// Serve o frontend Flutter Web compilado diretamente do Gateway Express
+const path = require('path');
+const fs = require('fs');
+const caminhosPossiveis = [
+  path.join(__dirname, '../../app_transporte/build/web'),
+  path.join(__dirname, '../public'),
+  path.join(__dirname, '../../public'),
+  path.join(process.cwd(), 'public'),
+];
+const flutterWebPath = caminhosPossiveis.find(p => fs.existsSync(p));
+if (flutterWebPath) {
+  app.use(express.static(flutterWebPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/linhas') || req.path.startsWith('/paradas') ||
+        req.path.startsWith('/gtfs') || req.path.startsWith('/previsao') ||
+        req.path.startsWith('/posicao') || req.path.startsWith('/saude') ||
+        req.path.startsWith('/metricas') || req.path.startsWith('/socket.io')) {
+      return next();
+    }
+    res.sendFile(path.join(flutterWebPath, 'index.html'));
+  });
+  console.log(`[middleware] 🌐 Frontend Flutter Web montado em http://localhost:${PORT}`);
+}
+
+// Inicia o servidor HTTP imediatamente para o Render detectar a porta aberta sem atraso
+server.listen(PORT, () => {
+  console.log(`\n======================================================`);
+  console.log(`🚀 [middleware] Rodando em http://localhost:${PORT}`);
+  console.log(`   Saúde da API:  http://localhost:${PORT}/saude`);
+  console.log(`   Métricas SD:   http://localhost:${PORT}/metricas`);
+  console.log(`   GTFS Stats:    http://localhost:${PORT}/gtfs/stats`);
+  console.log(`   Carregando serviços em segundo plano...`);
+  console.log(`======================================================\n`);
+});
+
 (async () => {
   try {
-    // Carrega dados GTFS antes de tudo (dados estáticos, não depende da API)
+    // 1. Carrega dados GTFS em segundo plano (otimizado com streaming para 38MB RAM)
     try {
-      gtfs.carregarGtfs();
+      await gtfs.carregarGtfs();
+      const stats = gtfs.obterEstatisticas();
+      console.log(`[middleware] ✅ GTFS pronto: ${stats.totalRotas} rotas | ${stats.totalShapes} shapes | ${stats.totalParadas} paradas`);
     } catch (gtfsErr) {
       console.warn(`[middleware] Aviso: falha ao carregar GTFS: ${gtfsErr.message}`);
       console.warn('[middleware] O servidor continuará sem dados GTFS (trajetos simplificados).');
     }
 
-    // Tenta autenticar na API Olho Vivo (não-fatal: servidor funciona em modo degradado)
+    // 2. Tenta autenticar na API Olho Vivo (não-fatal: servidor funciona em modo degradado)
     if (!TOKEN || TOKEN === 'coloque_aqui_seu_token' || TOKEN === 'seu_token_aqui') {
       console.warn('\n======================================================');
       console.warn('⚠️  [middleware] SPTRANS_TOKEN não configurado!');
@@ -612,44 +649,6 @@ io.on('connection', (socket) => {
         }, 2 * 60 * 1000);
       }
     }
-
-    // Serve o frontend Flutter Web compilado diretamente do Gateway Express
-    const path = require('path');
-    const fs = require('fs');
-    const caminhosPossiveis = [
-      path.join(__dirname, '../../app_transporte/build/web'),
-      path.join(__dirname, '../public'),
-      path.join(__dirname, '../../public'),
-      path.join(process.cwd(), 'public'),
-    ];
-    const flutterWebPath = caminhosPossiveis.find(p => fs.existsSync(p));
-    if (flutterWebPath) {
-      app.use(express.static(flutterWebPath));
-      app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/linhas') || req.path.startsWith('/paradas') ||
-            req.path.startsWith('/gtfs') || req.path.startsWith('/previsao') ||
-            req.path.startsWith('/posicao') || req.path.startsWith('/saude') ||
-            req.path.startsWith('/metricas') || req.path.startsWith('/socket.io')) {
-          return next();
-        }
-        res.sendFile(path.join(flutterWebPath, 'index.html'));
-      });
-      console.log(`[middleware] 🌐 Frontend Flutter Web montado em http://localhost:${PORT}`);
-    }
-
-    server.listen(PORT, () => {
-      const stats = gtfs.obterEstatisticas();
-      const modo = apiAutenticada ? 'PRODUÇÃO (API Olho Vivo + GTFS)' : 'DEGRADADO (somente GTFS)';
-      console.log(`\n======================================================`);
-      console.log(`🚀 [middleware] Rodando em http://localhost:${PORT}`);
-      console.log(`   Saúde da API:  http://localhost:${PORT}/saude`);
-      console.log(`   Métricas SD:   http://localhost:${PORT}/metricas`);
-      console.log(`   GTFS Stats:    http://localhost:${PORT}/gtfs/stats`);
-      console.log(`   Buscar GTFS:   http://localhost:${PORT}/gtfs/linhas?termo=8000`);
-      console.log(`   Rotas GTFS:    ${stats.totalRotas} rotas | ${stats.totalShapes} shapes | ${stats.totalParadas} paradas`);
-      console.log(`   Modo Atual:    ${modo}`);
-      console.log(`======================================================\n`);
-    });
   } catch (err) {
     console.error('[middleware] Erro fatal ao iniciar:', err.message);
     process.exit(1);

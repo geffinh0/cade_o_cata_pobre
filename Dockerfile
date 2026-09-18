@@ -33,4 +33,4 @@ ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
 
-CMD ["node", "src/server.js"]
+CMD ["node", "--max-old-space-size=400", "src/server.js"]
