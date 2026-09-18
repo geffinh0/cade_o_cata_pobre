@@ -616,8 +616,14 @@ io.on('connection', (socket) => {
     // Serve o frontend Flutter Web compilado diretamente do Gateway Express
     const path = require('path');
     const fs = require('fs');
-    const flutterWebPath = path.join(__dirname, '../../app_transporte/build/web');
-    if (fs.existsSync(flutterWebPath)) {
+    const caminhosPossiveis = [
+      path.join(__dirname, '../../app_transporte/build/web'),
+      path.join(__dirname, '../public'),
+      path.join(__dirname, '../../public'),
+      path.join(process.cwd(), 'public'),
+    ];
+    const flutterWebPath = caminhosPossiveis.find(p => fs.existsSync(p));
+    if (flutterWebPath) {
       app.use(express.static(flutterWebPath));
       app.get('*', (req, res, next) => {
         if (req.path.startsWith('/linhas') || req.path.startsWith('/paradas') ||

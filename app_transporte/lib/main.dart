@@ -21,7 +21,12 @@ void main() {
 
   // Detecção inteligente da URL padrão com base na plataforma de execução
   String baseUrlInicial = 'http://localhost:3000';
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+  if (kIsWeb) {
+    final host = Uri.base.host;
+    if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
+      baseUrlInicial = Uri.base.origin;
+    }
+  } else if (defaultTargetPlatform == TargetPlatform.android) {
     baseUrlInicial = 'http://10.0.2.2:3000'; // Alias do Android Emulator para o localhost do host
   }
 

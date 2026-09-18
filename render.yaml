@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: cade-o-cata-pobre
+    runtime: docker
+    plan: free
+    region: oregon
+    envVars:
+      - key: SPTRANS_TOKEN
+        sync: false
+      - key: POLL_INTERVAL_MS
+        value: "15000"

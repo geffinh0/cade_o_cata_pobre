@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+**/node_modules
+.dart_tool
+**/.dart_tool
+build
+**/build
+.env
+**/.env
+cookie-jar.txt
+**/cookie-jar.txt
+*.log
