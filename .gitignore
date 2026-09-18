@@ -1,0 +1,59 @@
+# ==============================================================================
+# SEGURANÇA E AMBIENTE (NUNCA COMMITTAR CREDENCIAIS NO GITHUB)
+# ==============================================================================
+.env
+.env.*
+!.env.example
+*.env
+cookie-jar.txt
+
+# ==============================================================================
+# NODE.JS (MIDDLEWARE)
+# ==============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# ==============================================================================
+# FLUTTER & DART (APP_TRANSPORTE)
+# ==============================================================================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+app_transporte/build/
+app_transporte/.dart_tool/
+app_transporte/.flutter-plugins-dependencies
+**/doc/api/
+**/ios/Flutter/.last_build_id
+/coverage/
+
+# ==============================================================================
+# SISTEMA OPERACIONAL E IDES
+# ==============================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.bak
+
+# ==============================================================================
+# ANDROID BUILD ARTIFACTS
+# ==============================================================================
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/.gradle/
+**/captures/

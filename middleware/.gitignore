@@ -1,0 +1,12 @@
+# Ambiente e Segredos
+.env
+.env.*
+!.env.example
+cookie-jar.txt
+
+# Dependências
+node_modules/
+npm-debug.log*
+
+# Logs
+*.log

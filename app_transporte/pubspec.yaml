@@ -1,0 +1,49 @@
+name: app_transporte
+description: "Aplicativo móvel em Flutter para rastreamento de transporte público em tempo real (Sistemas Distribuídos)."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Chamadas REST ao middleware (buscar linhas, paradas, previsão)
+  http: ^1.2.0
+
+  # Conexão com o canal de tempo real (Socket.IO pub/sub)
+  socket_io_client: ^3.0.0
+
+  # Gerenciamento de estado reativo
+  provider: ^6.1.2
+
+  # Tipografia moderna (Space Grotesk + Inter para Glassmorphism)
+  google_fonts: ^6.2.1
+
+  # Mapa interativo gratuito via OpenStreetMap (sem chave de API)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Formatação de datas e horários da SPTrans
+  intl: ^0.19.0
+
+  # Persistência de favoritos
+  shared_preferences: ^2.2.3
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+  geolocator: ^14.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
