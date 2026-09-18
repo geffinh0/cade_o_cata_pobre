@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/glass_theme.dart';
-import 'glass_container.dart';
 
-/// Indicador discreto de status ao vivo da conexão (Padrão Apple HIG)
+/// Indicador minimalista de status da conexão (Padrão Apple HIG)
+/// Exibe apenas o ponto circular com a cor de status da conexão (Verde = Ao vivo, Laranja/Vermelho = Offline)
 class DistribuidoBadgeWidget extends StatelessWidget {
   final bool conectado;
   final int latenciaMs;
@@ -18,39 +17,46 @@ class DistribuidoBadgeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final corPonto = conectado ? GlassTheme.systemGreen : GlassTheme.systemRed;
-    final texto = conectado ? 'Ao Vivo' : 'Offline';
+    final corPonto = conectado ? const Color(0xFF30D158) : GlassTheme.systemRed;
+    final tooltipTexto = conectado
+        ? 'Ao vivo • Conectado ($latenciaMs ms)'
+        : 'Desconectado do servidor';
 
-    return GlassContainer(
-      borderRadius: GlassTheme.radiusPill,
-      fillOpacity: 0.08,
-      borderOpacity: 0.14,
-      blurSigma: 12,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6.5,
-            height: 6.5,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: corPonto,
+    return Tooltip(
+      message: tooltipTexto,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: corPonto.withValues(alpha: 0.12),
+            border: Border.all(
+              color: corPonto.withValues(alpha: 0.25),
+              width: 1,
             ),
           ),
-          const SizedBox(width: 6),
-          Text(
-            texto,
-            style: GoogleFonts.inter(
-              color: Colors.white.withValues(alpha: 0.90),
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              letterSpacing: -0.1,
+          child: Center(
+            child: Container(
+              width: 8.5,
+              height: 8.5,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: corPonto,
+                boxShadow: [
+                  BoxShadow(
+                    color: corPonto.withValues(alpha: 0.60),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
+

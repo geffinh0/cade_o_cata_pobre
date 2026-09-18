@@ -32,20 +32,6 @@ class MainNavigationScreen extends StatelessWidget {
       FavoritesScreen(),
     ];
 
-    final titulos = [
-      'Mapa ao Vivo',
-      'Linhas de Ônibus',
-      'Paradas & Chegadas',
-      'Favoritos',
-    ];
-
-    final subtitulos = [
-      'Trajetos e monitoramento de frota',
-      'Consulta de itinerários e sentidos',
-      'Pontos e previsões em tempo real',
-      'Rotas salvas no dispositivo',
-    ];
-
     final totalFavoritos = provider.favoritos.length + provider.paradasFavoritas.length;
     final veiculosAtivos = provider.veiculos.length;
 
@@ -58,7 +44,7 @@ class MainNavigationScreen extends StatelessWidget {
               // 1. Estrutura Principal (Header Compacto + Telas)
               Column(
                 children: [
-                  // Top Glass Header — Compacto e Responsivo para qualquer largura
+                  // Top Glass Header — Limpo, Minimalista e Responsivo
                   Padding(
                     padding: const EdgeInsets.fromLTRB(14, 6, 14, 4),
                     child: Center(
@@ -85,48 +71,19 @@ class MainNavigationScreen extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            'Cadê o Cata Pobre',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 14.5,
-                                              fontWeight: FontWeight.w800,
-                                              color: Colors.white,
-                                              letterSpacing: -0.2,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.08),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: Colors.white.withValues(alpha: 0.16),
-                                              width: 0.8,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            titulos[provider.indiceAba].toUpperCase(),
-                                            style: GoogleFonts.inter(
-                                              fontSize: 8.5,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white.withValues(alpha: 0.75),
-                                              letterSpacing: 0.4,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    Text(
+                                      'Cadê o Cata Pobre',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: -0.2,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
-                                      provider.indiceAba == 0
-                                          ? 'Onde tá o busão? • Rastreamento ao vivo'
-                                          : subtitulos[provider.indiceAba],
+                                      'Onde tá o busão? • Rastreamento ao vivo',
                                       style: GoogleFonts.inter(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w400,
@@ -139,7 +96,7 @@ class MainNavigationScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              // Indicador sutil de conexão
+                              // Indicador sutil de conexão (apenas a bolinha verde / colorida com glow)
                               DistribuidoBadgeWidget(
                                 conectado: provider.conectado,
                                 latenciaMs: provider.latenciaMs,
