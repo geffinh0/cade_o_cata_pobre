@@ -14,6 +14,7 @@ class GlassTextField extends StatelessWidget {
     this.onSubmitted,
     this.onChanged,
     this.autofocus = false,
+    this.borderRadius,
   });
 
   final TextEditingController controller;
@@ -23,13 +24,14 @@ class GlassTextField extends StatelessWidget {
   final ValueChanged<String>? onSubmitted;
   final ValueChanged<String>? onChanged;
   final bool autofocus;
+  final double? borderRadius;
 
   @override
   Widget build(BuildContext context) {
     return GlassContainer(
-      borderRadius: GlassTheme.radiusInput, // 10.0
-      fillOpacity: 0.07,                    // 7% fill padrão
-      borderOpacity: 0.14,                  // 14% borda quase invisível
+      borderRadius: borderRadius ?? GlassTheme.radiusPill,
+      fillOpacity: 0.08,
+      borderOpacity: 0.16,
       blurSigma: 14,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       child: TextField(

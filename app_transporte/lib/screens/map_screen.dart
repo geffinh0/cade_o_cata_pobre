@@ -12,6 +12,7 @@ import '../models/linha.dart';
 import '../providers/transporte_provider.dart';
 import '../theme/glass_theme.dart';
 import '../widgets/glass_container.dart';
+import '../widgets/glass_search_bar.dart';
 import '../widgets/mapa_controles.dart';
 import '../widgets/painel_veiculo_detalhe.dart';
 import '../widgets/parada_marker.dart';
@@ -519,69 +520,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        GlassContainer(
-          borderRadius: 20,
-          blurSigma: 18,
-          fillOpacity: 0.16,
-          borderOpacity: 0.22,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        GlassSearchBar(
+          hintText: 'Buscar linha por número ou nome...',
+          prefixIcon: Icons.search_rounded,
+          readOnly: true,
+          actionLabel: 'Explorar',
+          actionIcon: Icons.touch_app_rounded,
           onTap: () => _abrirModalBuscaRapida(context, provider),
-          child: Row(
-            children: [
-              Image.asset(
-                'assets/images/cata_pobre_icon.png',
-                width: 34,
-                height: 34,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.medium,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Cadê o Cata Pobre?',
-                      style: GoogleFonts.inter(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    Text(
-                      'Toque para pesquisar e rastrear ao vivo no mapa',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: GlassTheme.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.touch_app_rounded, size: 12, color: Colors.white70),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Explorar',
-                      style: GoogleFonts.inter(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          onSearch: () => _abrirModalBuscaRapida(context, provider),
         ),
 
         // Atalhos rápidos em chips horizontais (Favoritos ou rotas populares)
@@ -1002,42 +948,27 @@ class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
               ),
               const SizedBox(height: 12),
 
-              // Campo de texto de busca
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.15),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: TextField(
-                  controller: _buscaCtrl,
-                  autofocus: true,
-                  style: const TextStyle(color: Colors.white),
-                  cursorColor: Colors.white,
-                  decoration: InputDecoration(
-                    icon: const Icon(CupertinoIcons.search, color: Colors.white70, size: 18),
-                    hintText: 'Digite o número ou destino da linha...',
-                    hintStyle: GoogleFonts.inter(color: Colors.white38, fontSize: 13),
-                    border: InputBorder.none,
-                    suffixIcon: _buscaCtrl.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.white60, size: 18),
-                            onPressed: () {
-                              _buscaCtrl.clear();
-                              setState(() {});
-                            },
-                          )
-                        : null,
-                  ),
-                  onSubmitted: (val) {
-                    if (val.trim().isNotEmpty) {
-                      provider.buscarLinhas(val.trim());
-                    }
-                  },
-                ),
+              // Campo de texto de busca padronizado em estilo pílula
+              GlassSearchBar(
+                controller: _buscaCtrl,
+                autofocus: true,
+                hintText: 'Digite o número ou destino da linha...',
+                prefixIcon: Icons.directions_bus_rounded,
+                isLoading: provider.carregando,
+                onSubmitted: (val) {
+                  if (val.trim().isNotEmpty) {
+                    provider.buscarLinhas(val.trim());
+                  }
+                },
+                onSearch: () {
+                  if (_buscaCtrl.text.trim().isNotEmpty) {
+                    provider.buscarLinhas(_buscaCtrl.text.trim());
+                  }
+                },
+                onClear: () {
+                  _buscaCtrl.clear();
+                  provider.buscarLinhas('');
+                },
               ),
               const SizedBox(height: 14),
 

@@ -6,7 +6,7 @@ import '../providers/transporte_provider.dart';
 import '../theme/glass_theme.dart';
 import '../widgets/glass_button.dart';
 import '../widgets/glass_container.dart';
-import '../widgets/glass_text_field.dart';
+import '../widgets/glass_search_bar.dart';
 import '../widgets/previsao_modal.dart';
 
 /// Tela de Busca de Paradas/Pontos de Ônibus e Consulta de Chegadas (ETA) em Vidro Líquido Neutro
@@ -42,63 +42,17 @@ class _StopsScreenState extends State<StopsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: GlassTextField(
-                      controller: _buscaController,
-                      hintText: 'Digite a rua, avenida ou ponto...',
-                      prefixIcon: Icons.location_on_rounded,
-                      suffixIcon: _buscaController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 18),
-                              onPressed: () {
-                                _buscaController.clear();
-                                setState(() {});
-                              },
-                            )
-                          : null,
-                      onSubmitted: (val) => provider.buscarParadas(val),
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GlassContainer(
-                    borderRadius: GlassTheme.radiusInput,
-                    fillOpacity: 0.12,
-                    borderOpacity: 0.18,
-                    blurSigma: 0,
-                    withBlur: false,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    onTap: provider.carregando ? null : () => provider.buscarParadas(_buscaController.text),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (provider.carregando)
-                          const SizedBox(
-                            width: 15,
-                            height: 15,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        else ...[
-                          const Icon(Icons.search_rounded, size: 16, color: Colors.white),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Buscar',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+              GlassSearchBar(
+                controller: _buscaController,
+                hintText: 'Digite a rua, avenida ou ponto...',
+                prefixIcon: Icons.location_on_rounded,
+                isLoading: provider.carregando,
+                onSubmitted: (val) => provider.buscarParadas(val),
+                onSearch: () => provider.buscarParadas(_buscaController.text),
+                onClear: () {
+                  _buscaController.clear();
+                  provider.buscarParadas('');
+                },
               ),
             ],
           ),
