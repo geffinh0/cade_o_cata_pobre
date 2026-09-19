@@ -515,125 +515,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   /// Barra de busca flutuante para quando nenhuma linha estiver sendo monitorada
   Widget _buildBarraBuscaFlutuante(BuildContext context, TransporteProvider provider) {
-    final favoritos = provider.favoritos;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GlassSearchBar(
-          hintText: 'Buscar linha por número ou nome...',
-          prefixIcon: Icons.search_rounded,
-          readOnly: true,
-          actionLabel: 'Explorar',
-          actionIcon: Icons.touch_app_rounded,
-          onTap: () => _abrirModalBuscaRapida(context, provider),
-          onSearch: () => _abrirModalBuscaRapida(context, provider),
-        ),
-
-        // Atalhos rápidos em chips horizontais (Favoritos ou rotas populares para seleção em 1 toque)
-        Builder(
-          builder: (ctx) {
-            final chips = favoritos.isNotEmpty
-                ? favoritos
-                : const [
-                    {'codigo_linha': '', 'letreiro': '8000-10', 'descricao': 'Term. Lapa'},
-                    {'codigo_linha': '', 'letreiro': '875A-10', 'descricao': 'Aeroporto'},
-                    {'codigo_linha': '', 'letreiro': '175T-10', 'descricao': 'Metrô Jabaquara'},
-                    {'codigo_linha': '', 'letreiro': '3026-10', 'descricao': 'CPTM Guaianazes'},
-                  ];
-
-            return Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: SizedBox(
-                height: 34,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: math.min(chips.length, 6),
-                  separatorBuilder: (_, index) => const SizedBox(width: 6),
-                  itemBuilder: (ctx, index) {
-                    final item = chips[index];
-                    final letreiro = item['letreiro'] ?? item['codigo_linha'] ?? '';
-                    final desc = item['descricao'] ?? '';
-                    final isFavorito = favoritos.isNotEmpty;
-
-                    return InkWell(
-                      onTap: () async {
-                        final codigo = int.tryParse(item['codigo_linha'] ?? '');
-                        if (codigo != null && codigo > 0) {
-                          final linhaObj = Linha(
-                            cl: codigo,
-                            lc: false,
-                            lt: letreiro,
-                            tl: 10,
-                            sl: 1,
-                            tp: desc,
-                            ts: '',
-                          );
-                          provider.acompanharLinha(linhaObj);
-                          Future.delayed(const Duration(milliseconds: 300), () {
-                            if (mounted) _ajustarCameraParaLinha(provider);
-                          });
-                        } else {
-                          provider.buscarLinhas(letreiro);
-                          _abrirModalBuscaRapida(context, provider);
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(GlassTheme.radiusPill),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xDD111915),
-                          borderRadius: BorderRadius.circular(GlassTheme.radiusPill),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.16),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.30),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isFavorito ? CupertinoIcons.star_fill : Icons.directions_bus_rounded,
-                              size: 11,
-                              color: isFavorito ? const Color(0xFFFF9F0A) : Colors.white70,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              letreiro,
-                              style: GoogleFonts.inter(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                            if (desc.isNotEmpty) ...[
-                              const SizedBox(width: 4),
-                              Text(
-                                '• $desc',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w400,
-                                  color: Colors.white60,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            );
-          },
-        ),
-      ],
+    return GlassSearchBar(
+      hintText: 'Buscar linha por número ou nome...',
+      prefixIcon: Icons.search_rounded,
+      readOnly: true,
+      actionLabel: 'Explorar',
+      actionIcon: Icons.touch_app_rounded,
+      onTap: () => _abrirModalBuscaRapida(context, provider),
+      onSearch: () => _abrirModalBuscaRapida(context, provider),
     );
   }
 
@@ -928,15 +817,6 @@ class _ModalBuscaRapidaLinhas extends StatefulWidget {
 class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
   final TextEditingController _buscaCtrl = TextEditingController();
 
-  static const List<Map<String, String>> _sugestoesPopulares = [
-    {'letreiro': '8000-10', 'desc': 'Term. Lapa / Pça. Ramos'},
-    {'letreiro': '875A-10', 'desc': 'Aeroporto / Perdizes'},
-    {'letreiro': '175T-10', 'desc': 'Tremembé / Metrô Jabaquara'},
-    {'letreiro': '856R-10', 'desc': 'Lapa / Socorro'},
-    {'letreiro': '3026-10', 'desc': 'Vila Progresso / CPTM'},
-    {'letreiro': '208M-10', 'desc': 'Metrô Santana / Term. Pinheiros'},
-  ];
-
   @override
   void dispose() {
     _buscaCtrl.dispose();
@@ -1178,34 +1058,18 @@ class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
                                     ),
                                     const SizedBox(height: 16),
                                   ],
-                                  Text(
-                                    'Linhas Sugeridas / Populares',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: GlassTheme.textTertiary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: _sugestoesPopulares.map((s) {
-                                      return ActionChip(
-                                        avatar: const Icon(Icons.directions_bus_rounded, size: 14, color: Colors.white70),
-                                        backgroundColor: Colors.white.withValues(alpha: 0.08),
-                                        side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GlassTheme.radiusPill)),
-                                        label: Text(
-                                          '${s['letreiro']} • ${s['desc']}',
-                                          style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                                  Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 40),
+                                      child: Text(
+                                        'Digite o número ou nome da linha para ver o trajeto e veículos ao vivo.',
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.inter(
+                                          color: GlassTheme.textTertiary,
+                                          fontSize: 13,
                                         ),
-                                        onPressed: () {
-                                          _buscaCtrl.text = s['letreiro']!;
-                                          provider.buscarLinhas(s['letreiro']!);
-                                        },
-                                      );
-                                    }).toList(),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
