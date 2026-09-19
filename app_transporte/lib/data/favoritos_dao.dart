@@ -37,12 +37,20 @@ class FavoritosDao {
             'codigo_linha': map['codigo_linha']?.toString() ?? '',
             'descricao': map['descricao']?.toString() ?? '',
             'letreiro': map['letreiro']?.toString() ?? '',
+            'sl': map['sl']?.toString() ?? '1',
+            'origem': map['origem']?.toString() ?? '',
+            'destino': map['destino']?.toString() ?? '',
+            'lc': (map['lc'] == true || map['lc'] == 'true') ? 'true' : 'false',
           };
         } catch (_) {
           return {
             'codigo_linha': itemStr,
             'descricao': 'Linha $itemStr',
             'letreiro': itemStr,
+            'sl': '1',
+            'origem': '',
+            'destino': '',
+            'lc': 'false',
           };
         }
       }).toList();
@@ -52,7 +60,15 @@ class FavoritosDao {
     }
   }
 
-  Future<void> adicionar(String codigoLinha, String descricao, {String letreiro = ''}) async {
+  Future<void> adicionar(
+    String codigoLinha,
+    String descricao, {
+    String letreiro = '',
+    int sl = 1,
+    String origem = '',
+    String destino = '',
+    bool lc = false,
+  }) async {
     final prefs = await _getPrefs();
     final list = List<Map<String, dynamic>>.from(await listarFavoritos());
 
@@ -61,6 +77,10 @@ class FavoritosDao {
       'codigo_linha': codigoLinha,
       'descricao': descricao,
       'letreiro': letreiro.isNotEmpty ? letreiro : descricao,
+      'sl': sl,
+      'origem': origem,
+      'destino': destino,
+      'lc': lc,
     });
 
     final serialized = list.map((item) => jsonEncode(item)).toList();

@@ -17,6 +17,7 @@ import '../widgets/mapa_controles.dart';
 import '../widgets/painel_veiculo_detalhe.dart';
 import '../widgets/parada_marker.dart';
 import '../widgets/previsao_modal.dart';
+import '../widgets/sentido_badge.dart';
 import '../widgets/user_location_marker.dart';
 import '../widgets/veiculo_marker.dart';
 
@@ -526,7 +527,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// Header de linha ativa em vidro líquido
+  /// Header de linha ativa em vidro líquido com identificação clara de Ida/Volta e Destino
   Widget _buildHeaderLinhaAtiva(
     BuildContext context,
     TransporteProvider provider,
@@ -542,25 +543,34 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1B3B2B),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 1,
+          // Badges: Número + Sentido
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1B3B2B),
+                  borderRadius: BorderRadius.circular(7),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  linha.lt,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                    letterSpacing: -0.2,
+                  ),
+                ),
               ),
-            ),
-            child: Text(
-              linha.lt,
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 12.5,
-                letterSpacing: -0.2,
-              ),
-            ),
+              const SizedBox(height: 3),
+              SentidoBadge(linha: linha, compact: true),
+            ],
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -569,15 +579,25 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  linha.tp,
+                  'Para: ${linha.destino}',
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     color: Colors.white,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                Text(
+                  'Saindo de: ${linha.origem}',
+                  style: GoogleFonts.inter(
+                    fontSize: 10.5,
+                    color: Colors.white70,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 1),
                 Row(
                   children: [
                     _PulsatingDot(
@@ -590,7 +610,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       child: Text(
                         '$qtdVeiculos ônibus ao vivo • $horaAtualizacao',
                         style: GoogleFonts.inter(
-                          fontSize: 10.5,
+                          fontSize: 10,
                           color: GlassTheme.textSecondary,
                         ),
                         maxLines: 1,
@@ -816,6 +836,7 @@ class _ModalBuscaRapidaLinhas extends StatefulWidget {
 
 class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
   final TextEditingController _buscaCtrl = TextEditingController();
+  int _filtroSentido = 0; // 0: Todas, 1: Ida, 2: Volta
 
   @override
   void dispose() {
@@ -832,6 +853,12 @@ class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
         final linhas = provider.linhas;
         final historico = provider.historicoBuscas;
         final favoritos = provider.favoritos;
+
+        final linhasFiltradas = linhas.where((l) {
+          if (_filtroSentido == 1) return l.sl == 1;
+          if (_filtroSentido == 2) return l.sl == 2;
+          return true;
+        }).toList();
 
         return DraggableScrollableSheet(
           initialChildSize: 0.75,
@@ -912,7 +939,31 @@ class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
                       provider.buscarLinhas('');
                     },
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
+
+                  // Filtro Segmentado para Ida / Volta dentro do modal
+                  if (linhas.isNotEmpty) ...[
+                    Container(
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          width: 1,
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(2.5),
+                      child: Row(
+                        children: [
+                          _buildSegmentModal('Todas', 0),
+                          _buildSegmentModal('➔ Ida', 1),
+                          _buildSegmentModal('⮌ Volta', 2),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
                   // Resultados ou sugestões
                   Expanded(
@@ -922,50 +973,56 @@ class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
                             ),
                           )
-                        : linhas.isNotEmpty
+                        : linhasFiltradas.isNotEmpty
                             ? ListView.separated(
                                 controller: scrollController,
-                                itemCount: linhas.length,
+                                itemCount: linhasFiltradas.length,
                                 separatorBuilder: (_, index) => const Divider(color: Colors.white10, height: 1),
                                 itemBuilder: (ctx, idx) {
-                                  final l = linhas[idx];
+                                  final l = linhasFiltradas[idx];
                                   return ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                    leading: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                                      decoration: BoxDecoration(
-                                        color: GlassTheme.accentDarkGreen,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.18),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                    leading: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: GlassTheme.accentDarkGreen,
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: Colors.white.withValues(alpha: 0.18),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            l.lt,
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                      child: Text(
-                                        l.lt,
-                                        style: GoogleFonts.inter(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 12.5,
-                                        ),
-                                      ),
+                                        const SizedBox(height: 3),
+                                        SentidoBadge(linha: l, compact: true),
+                                      ],
                                     ),
                                     title: Text(
-                                      l.tp,
+                                      'Para: ${l.destino}',
                                       style: GoogleFonts.inter(
                                         fontSize: 13.5,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
                                     ),
-                                    subtitle: l.ts.isNotEmpty
-                                        ? Text(
-                                            'Sentido: ${l.ts}',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 11,
-                                              color: GlassTheme.textTertiary,
-                                            ),
-                                          )
-                                        : null,
+                                    subtitle: Text(
+                                      'Saindo de: ${l.origem}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        color: GlassTheme.textTertiary,
+                                      ),
+                                    ),
                                     trailing: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                       decoration: BoxDecoration(
@@ -1080,6 +1137,44 @@ class _ModalBuscaRapidaLinhasState extends State<_ModalBuscaRapidaLinhas> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildSegmentModal(String label, int value) {
+    final isSelected = _filtroSentido == value;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _filtroSentido = value),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
+            border: isSelected
+                ? Border.all(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    width: 1,
+                  )
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              color: isSelected ? Colors.white : Colors.white60,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
     );
   }
 }

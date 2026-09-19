@@ -514,8 +514,12 @@ class TransporteProvider extends ChangeNotifier {
   Future<void> favoritarLinha(Linha linha) async {
     await _favoritosDao.adicionar(
       linha.cl.toString(),
-      '${linha.tp} / ${linha.ts}',
+      linha.destino.isNotEmpty ? linha.destino : '${linha.tp} / ${linha.ts}',
       letreiro: linha.lt,
+      sl: linha.sl,
+      origem: linha.origem,
+      destino: linha.destino,
+      lc: linha.lc,
     );
     await carregarFavoritos();
   }

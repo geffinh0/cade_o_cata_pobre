@@ -244,11 +244,43 @@ class PrevisaoModalWidget extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      Text(
-                                        linhaPrev.sl == 1 ? 'Sentido Ida' : 'Sentido Volta',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          color: Colors.white70,
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                        decoration: BoxDecoration(
+                                          color: linhaPrev.sl == 2
+                                              ? const Color(0xFF112233)
+                                              : const Color(0xFF13281C),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: linhaPrev.sl == 2
+                                                ? const Color(0xFF2A557A)
+                                                : const Color(0xFF2D613F),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              linhaPrev.sl == 2
+                                                  ? Icons.arrow_back_rounded
+                                                  : Icons.arrow_forward_rounded,
+                                              size: 11,
+                                              color: linhaPrev.sl == 2
+                                                  ? const Color(0xFF64B5F6)
+                                                  : const Color(0xFF4ADE80),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              linhaPrev.sl == 2 ? 'VOLTA' : 'IDA',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: linhaPrev.sl == 2
+                                                    ? const Color(0xFF64B5F6)
+                                                    : const Color(0xFF4ADE80),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                       const Spacer(),

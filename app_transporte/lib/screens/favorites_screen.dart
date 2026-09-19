@@ -8,6 +8,7 @@ import '../theme/glass_theme.dart';
 import '../widgets/glass_button.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/previsao_modal.dart';
+import '../widgets/sentido_badge.dart';
 
 /// Tela de Gerenciamento de Favoritos e Histórico em Vidro Líquido Neutro
 /// Layout adaptado milimetricamente para mobile.
@@ -139,6 +140,21 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                         final codLinha = fav['codigo_linha'] ?? '';
                         final desc = fav['descricao'] ?? '';
                         final letreiro = fav['letreiro'] ?? codLinha;
+                        final sl = int.tryParse(fav['sl'] ?? '1') ?? 1;
+                        final origem = fav['origem'] ?? '';
+                        final destino = fav['destino'] ?? desc;
+                        final lc = fav['lc'] == 'true';
+                        final cl = int.tryParse(codLinha) ?? 0;
+
+                        final linhaFav = Linha(
+                          cl: cl,
+                          lc: lc,
+                          lt: letreiro,
+                          sl: sl,
+                          tl: 10,
+                          tp: sl == 1 ? (origem.isNotEmpty ? origem : desc) : destino,
+                          ts: sl == 1 ? destino : (origem.isNotEmpty ? origem : desc),
+                        );
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
@@ -161,6 +177,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                       decoration: BoxDecoration(
                                         color: GlassTheme.accentDarkGreen,
                                         borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.16),
+                                        ),
                                       ),
                                       child: Text(
                                         letreiro,
@@ -171,20 +190,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        desc,
-                                        style: GoogleFonts.inter(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
+                                    const SizedBox(width: 8),
+                                    SentidoBadge(linha: linhaFav, compact: true),
+                                    const Spacer(),
                                     GestureDetector(
                                       onTap: () => provider.desfavoritarLinha(codLinha),
                                       child: const Padding(
@@ -198,24 +206,52 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      linhaFav.isVolta
+                                          ? Icons.arrow_back_rounded
+                                          : Icons.arrow_forward_rounded,
+                                      size: 14,
+                                      color: linhaFav.isVolta
+                                          ? const Color(0xFF64B5F6)
+                                          : const Color(0xFF4ADE80),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        destino.startsWith('Para: ') ? destino : 'Para: $destino',
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (origem.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Saindo de: $origem',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11.5,
+                                      color: GlassTheme.textTertiary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                                 const SizedBox(height: 10),
                                 GlassButton(
                                   isPrimary: true,
                                   label: 'Acompanhar no Mapa',
                                   icon: const Icon(Icons.map_rounded, size: 14, color: Colors.white),
                                   onTap: () {
-                                    final cl = int.tryParse(codLinha) ?? 0;
-                                    provider.acompanharLinha(
-                                      Linha(
-                                        cl: cl,
-                                        lc: false,
-                                        lt: letreiro,
-                                        sl: 1,
-                                        tl: 10,
-                                        tp: desc,
-                                        ts: '',
-                                      ),
-                                    );
+                                    provider.acompanharLinha(linhaFav);
                                   },
                                 ),
                               ],

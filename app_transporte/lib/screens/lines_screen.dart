@@ -7,6 +7,7 @@ import '../theme/glass_theme.dart';
 import '../widgets/glass_button.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/glass_search_bar.dart';
+import '../widgets/sentido_badge.dart';
 import 'line_detail_screen.dart';
 
 /// Tela de Busca e Exploração de Linhas de Transporte em Vidro Líquido Neutro
@@ -78,9 +79,9 @@ class _LinesScreenState extends State<LinesScreen> {
                 padding: const EdgeInsets.all(2.5),
                 child: Row(
                   children: [
-                    _buildSegment('Todos', 0),
-                    _buildSegment('Ida (Sentido 1)', 1),
-                    _buildSegment('Volta (Sentido 2)', 2),
+                    _buildSegment('Todas', 0),
+                    _buildSegment('➔ Ida', 1),
+                    _buildSegment('⮌ Volta', 2),
                   ],
                 ),
               ),
@@ -192,19 +193,19 @@ class _LinesScreenState extends State<LinesScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Cabeçalho do Card: Badge + Sentido + Favorito
+                                // Cabeçalho do Card: Número da Linha + Badge Sentido + Favorito
                                 Row(
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 9,
-                                        vertical: 3.5,
+                                        vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
                                         color: GlassTheme.accentDarkGreen,
                                         borderRadius: BorderRadius.circular(7),
                                         border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.16),
+                                          color: Colors.white.withValues(alpha: 0.18),
                                           width: 1,
                                         ),
                                       ),
@@ -218,49 +219,8 @@ class _LinesScreenState extends State<LinesScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 7,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.06),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          linha.sentidoDescricao,
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            color: Colors.white.withValues(alpha: 0.80),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                    if (linha.lc) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          'Circular',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 10.5,
-                                            color: Colors.white70,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                    const SizedBox(width: 4),
+                                    SentidoBadge(linha: linha),
+                                    const Spacer(),
                                     GestureDetector(
                                       onTap: () {
                                         if (isFav) {
@@ -281,20 +241,69 @@ class _LinesScreenState extends State<LinesScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 10),
-                                Text(
-                                  linha.tp,
-                                  style: GoogleFonts.inter(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14.5,
-                                    color: Colors.white,
-                                  ),
+
+                                // Nome do Destino (Letreiro do Ônibus)
+                                Row(
+                                  children: [
+                                    Icon(
+                                      linha.isVolta
+                                          ? Icons.arrow_back_rounded
+                                          : Icons.arrow_forward_rounded,
+                                      size: 15,
+                                      color: linha.isVolta
+                                          ? const Color(0xFF64B5F6)
+                                          : const Color(0xFF4ADE80),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Para: ${linha.destino}',
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                          color: Colors.white,
+                                          letterSpacing: -0.2,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Destino: ${linha.ts}',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: GlassTheme.textTertiary,
+                                const SizedBox(height: 5),
+
+                                // Origem / Ponto de partida
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.08),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.trip_origin_rounded,
+                                        size: 11,
+                                        color: Colors.white54,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          linha.isCircular
+                                              ? 'Partida: ${linha.origem} (Circular)'
+                                              : 'Saindo de: ${linha.origem}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11.5,
+                                            color: Colors.white70,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 12),

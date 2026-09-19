@@ -56,7 +56,37 @@ class Linha {
     };
   }
 
+  /// Destino para onde este veículo está se deslocando no sentido atual
+  String get destino => (sl == 1) ? ts : tp;
+
+  /// Origem de onde este veículo partiu no sentido atual
+  String get origem => (sl == 1) ? tp : ts;
+
+  /// Letreiro do visor frontal do ônibus (nome do destino)
+  String get letreiroDestino => destino.isNotEmpty ? destino : tp;
+
+  /// Rótulo curto do sentido ('IDA', 'VOLTA', 'CIRCULAR')
+  String get sentidoRotulo {
+    if (lc) return 'CIRCULAR';
+    return sl == 1 ? 'IDA' : 'VOLTA';
+  }
+
+  /// Indica se é sentido Ida (1: TP -> TS)
+  bool get isIda => sl == 1;
+
+  /// Indica se é sentido Volta (2: TS -> TP)
+  bool get isVolta => sl == 2;
+
+  /// Indica se o trajeto é circular
+  bool get isCircular => lc;
+
+  /// Descrição explicada do trajeto com seta direcional
+  String get trajetoCompleto {
+    if (lc) return '$origem (Circular)';
+    return '$origem ➔ $destino';
+  }
+
   /// Descrição amigável para exibição no app
-  String get nomeExibicao => '$lt - $tp / $ts';
-  String get sentidoDescricao => sl == 1 ? 'Ida ($tp → $ts)' : 'Volta ($ts → $tp)';
+  String get nomeExibicao => '$lt • Para: $destino ($sentidoRotulo)';
+  String get sentidoDescricao => '$sentidoRotulo ($origem ➔ $destino)';
 }
